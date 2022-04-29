@@ -53,7 +53,7 @@ describe("POST /Login", () => {
     const res = await request(server)
     .post("/api/auth/login")
     .send(user1);
-    expect(res.status).toBe(401)
+    expect(res.status).toBe()
     expect(res.body.message).toMatch("welcome, Reed");
   });
   test("Login return error if credentials invalid", async () => {
