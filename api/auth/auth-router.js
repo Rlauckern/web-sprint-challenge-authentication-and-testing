@@ -1,27 +1,23 @@
+const { 
+  checkUsernameUnique,
+  checkUsernameValid,
+  validLogin, 
+  tokenBuilder 
+} = require('./auth-middleware');
+const bcrypt = require('bcryptjs');
+const User = require("../users/users-model");
 
 const router = require('express').Router();
-const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken');
-const Users = require('./users-model');
-const { BCRYPT_ROUNDS, JWT_SECRET } = require('../secrets');
-const { add, findBy } = require('./users-model');
-const { checkUsernameExists, validatePost } = require('./auth-middleware');
 
-router.post('/register', checkUsernameExists, validatePost, (req, res, next) => {
-  // res.end('implement register, please!');
-  const user = req.body;
+router.post('/register', checkUsernameUnique, validLogin, (req, res, next) => {
+  const { username, password } = req.body;
+  const hash = bcrypt.hashSync(password, 8)
 
-  const hash = bcrypt.hashSync(user.password, 8);
-  user.password = hash;
-
-  Users.add(user)
-    .then(newUser => {
-      res.status(201).json(newUser);
-    })
-    .catch(err => {
-      res.status(500).json({ message: 'error adding new user' });
-    })
-
+  User.add({ username, password: hash })
+  .then((newUser) => {
+    res.status(201).json(newUser);
+  })
+  .catch(next)
   /*
     IMPLEMENT
     You are welcome to build additional middlewares to help with the endpoint's functionality.
@@ -45,15 +41,12 @@ router.post('/register', checkUsernameExists, validatePost, (req, res, next) => 
   */
 });
 
-router.post('/login', validatePost, checkUsernameExists, (req, res, next) => {
-  // res.end('implement login, please!');
-  const { username, password } = req.body;
-
-  if(bcrypt.compareSync(password, req.user.password)) {
-    const token = generateToken(req.user);
-    res.status(200).json({ message: `welcome, ${username}`, token });
+router.post('/login', checkUsernameValid, validLogin, (req, res, next) => {
+  if (bcrypt.compareSync(req.body.password, req.user.password)) {
+    const token = tokenBuilder(req.user)
+    res.json({ message: `welcome ${req.user.username}`, token })
   } else {
-    res.status(401).json({ message: 'invalid credentials' });
+    next ({ status: 401, message: 'invalid credentials' })
   }
   /*
     IMPLEMENT
@@ -75,14 +68,5 @@ router.post('/login', validatePost, checkUsernameExists, (req, res, next) => {
       the response body should include a string exactly as follows: "invalid credentials".
   */
 });
-
-function generateToken(user) {
-  const payload = {
-    subject: user.id,
-    username: user.username,
-    role_name: user.role_name
-  }
-  return jwt.sign(payload, JWT_SECRET, { expiresIn: '1d' });
-}
 
 module.exports = router;

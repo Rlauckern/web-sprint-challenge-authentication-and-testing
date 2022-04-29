@@ -1,26 +1,65 @@
-const Users = require('../auth/users-model');
-const { findBy } = require('../auth/users-model');
+const User = require("../users/users-model");
+const jwt = require('jsonwebtoken')
+const { JWT_SECRET } = require('../config/index')
 
-async function checkUsernameExists(req, res, next) {
-    const user = await findBy({ username: req.body.username });
-    if(user) {
-        res.status(401).json({ message: 'username taken' });
-        return;
+const checkUsernameValid = async (req, res, next) => {
+  try {
+    const user = await User.findBy(req.body.username);
+    if (!user) {
+      next({ status: 422, message: "invalid credentials" });
     } else {
-        next();
+      req.user = user;
+      next();
     }
+  } catch (err) {
+    next(err);
+  }
+};
+
+async function checkUsernameUnique(req, res, next) {
+  try {
+    const users = await User.findBy({ username: req.body.username });
+    if (!users.length) next();
+    else next({ message: "username taken", status: 422 });
+  } catch (err) {
+    next(err);
+  }
 }
 
-function validatePost(req, res, next) {
-    if(!req.body.username || !req.body.password) {
-        res.status(401).json({ message: 'username and password required' });
-        return;
+const validLogin = (req, res, next) => {
+  try {
+    if (
+      !req.body.username ||
+      !req.body.username.trim() ||
+      !req.body.password ||
+      !req.body.password.trim()
+    ) {
+      next({ status: 401, message: "username and password required" });
     } else {
-        next();
+      req.body.username = req.body.username.trim();
+      next();
     }
+  } catch (err) {
+    next(err);
+  }
+};
+
+const tokenBuilder = (user) => {
+    const payload = {
+        subject: user.id,
+        username: user.username
+    }
+    const options = {
+        expiresIn: '1d'
+    }
+    const token = jwt.sign(payload, JWT_SECRET, options)
+
+    return token
 }
 
 module.exports = {
-    checkUsernameExists,
-    validatePost
-}
+  checkUsernameUnique,
+  checkUsernameValid,
+  validLogin,
+  tokenBuilder,
+};
