@@ -19,11 +19,11 @@ test('sanity', () => {
 
 describe('test server endpoints', () => {
   test('[POST] /api/auth/register | successful status and response', async () => {
-    const user = { username: 'Lindsay', password: '1234'}
+    const user = { username: 'Reed', password: '1234'}
     const result = await request(server)
       .post('/api/auth/register')
       .send(user)
-    expect(user).toMatchObject({ username: 'Lindsay' });
+    expect(user).toMatchObject({ username: 'Reed' });
   })
 })
   test('[POST] /api/auth/register | returns 401 when missing username', async () => {
