@@ -87,7 +87,7 @@ describe("HTTP API functions are working properly", () => {
   test("[8] GET /api/jokes [test 2] successfuly retrieves jokes with authorization header jwt token", async () => {
     const login = await request(server)
       .post("/api/auth/login")
-      .send({ username: "bob", password: "1234" });
+      .send({ username: "reed", password: "1234" });
     const res = await request(server).get("/api/jokes").set("Authorization", login.body.token);
     expect(res.status).toBe(200);
     expect(res.body).toHaveLength(3);
